@@ -1,1 +1,1 @@
-rootProject.name = "exception"
+rootProject.name = "nadeex-spring-exception"

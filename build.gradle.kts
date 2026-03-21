@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.nadeex.spring"
-version = "0.1.0"
+version = "0.1.3"
 
 java {
     toolchain {
@@ -21,6 +21,7 @@ val githubUser: String = (findProperty("gpr.user") as String?) ?: System.getenv(
 val githubToken: String = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN") ?: ""
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         name = "GitHubPackages-Common"
@@ -39,7 +40,7 @@ dependencyManagement {
 }
 
 dependencies {
-    api("com.nadeex.spring:common:0.1.0")
+    api("com.nadeex.spring:common:0.1.2")
     compileOnly("org.springframework.boot:spring-boot-starter-web")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
@@ -71,8 +72,8 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = "com.nadeex.spring"
             artifactId = "exception"
-            version = "0.1.0"
             from(components["java"])
+
             pom {
                 name.set("Nadeex Spring Exception")
                 description.set("Structured exception handling and error responses for Spring Boot applications")
