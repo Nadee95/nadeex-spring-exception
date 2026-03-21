@@ -1,12 +1,16 @@
 plugins {
     `java-library`
     `maven-publish`
+    id("org.springframework.boot") version "3.2.3" apply false
     id("io.spring.dependency-management") version "1.1.4"
     jacoco
 }
 
 group = "com.nadeex.spring"
 version = "0.1.0"
+
+val githubUser: String = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR") ?: ""
+val githubToken: String = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN") ?: ""
 
 java {
     toolchain {
@@ -15,13 +19,20 @@ java {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
+    maven {
+        name = "GitHubPackages-Common"
+        url = uri("https://maven.pkg.github.com/Nadee95/nadeex-spring-common")
+        credentials {
+            username = githubUser
+            password = githubToken
+        }
+    }
 }
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:3.2.3")
+        mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
     }
 }
 
@@ -52,16 +63,37 @@ publishing {
             artifactId = "exception"
             version = "0.1.0"
             from(components["java"])
+            pom {
+                name.set("Nadeex Spring Exception")
+                description.set("Structured exception handling and error responses for Spring Boot applications")
+                url.set("https://github.com/Nadee95/nadeex-spring-exception")
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("nadee95")
+                        name.set("Nadeeka Dilhan")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/Nadee95/nadeex-spring-exception.git")
+                    developerConnection.set("scm:git:ssh://github.com/Nadee95/nadeex-spring-exception.git")
+                    url.set("https://github.com/Nadee95/nadeex-spring-exception")
+                }
+            }
         }
     }
     repositories {
-        mavenLocal()
         maven {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/Nadee95/nadeex-spring-exception")
             credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
+                username = githubUser
+                password = githubToken
             }
         }
     }
