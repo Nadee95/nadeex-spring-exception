@@ -9,14 +9,16 @@ plugins {
 group = "com.nadeex.spring"
 version = "0.1.0"
 
-val githubUser: String = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR") ?: ""
-val githubToken: String = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN") ?: ""
-
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
+
+// Credential resolution: local gradle.properties (gpr.user / gpr.key) → env vars → empty string
+// Set gpr.user and gpr.key in ~/.gradle/gradle.properties for local publishing — never commit them here.
+val githubUser: String = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR") ?: ""
+val githubToken: String = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN") ?: ""
 
 repositories {
     mavenCentral()
@@ -43,17 +45,25 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.junit.jupiter:junit-jupiter")
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
 }
 
-tasks.withType<Test> { useJUnitPlatform() }
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
 
-tasks.test { finalizedBy(tasks.jacocoTestReport) }
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+}
 
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
-    reports { xml.required.set(true); html.required.set(true) }
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
 
 publishing {

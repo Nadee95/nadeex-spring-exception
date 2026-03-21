@@ -22,10 +22,8 @@ jobs:
           cache: gradle
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-        working-directory: exception
       - name: Build and Test
         run: ./gradlew build
-        working-directory: exception
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
