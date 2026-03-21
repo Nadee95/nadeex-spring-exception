@@ -21,16 +21,13 @@ jobs:
           cache: gradle
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-        working-directory: exception
       - name: Build
         run: ./gradlew build
-        working-directory: exception
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
       - name: Publish to GitHub Packages
         run: ./gradlew publish
-        working-directory: exception
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
