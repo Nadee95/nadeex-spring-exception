@@ -1,0 +1,146 @@
+package com.nadeex.spring.exception.handler;
+
+import com.nadeex.spring.common.response.ErrorResponse;
+import com.nadeex.spring.exception.BusinessException;
+import com.nadeex.spring.exception.ConflictException;
+import com.nadeex.spring.exception.ForbiddenException;
+import com.nadeex.spring.exception.ResourceNotFoundException;
+import com.nadeex.spring.exception.UnauthorizedException;
+import com.nadeex.spring.exception.ValidationException;
+import com.nadeex.spring.exception.mapper.ExceptionMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+/**
+ * Global exception handler for all REST controllers.
+ *
+ * <p>Intercepts every exception thrown inside a {@code @RestController} and
+ * converts it into a standardised {@link ErrorResponse} JSON body with the
+ * correct HTTP status code. Consuming applications can override this bean by
+ * declaring their own {@code GlobalExceptionHandler} — see
+ * {@link com.nadeex.spring.exception.config.ExceptionAutoConfiguration}.</p>
+ *
+ * <p>Handler priority (most-specific wins, consistent with Spring MVC):</p>
+ * <ol>
+ *   <li>Per-exception handlers (404, 409, 400, 422, 401, 403)</li>
+ *   <li>{@link MethodArgumentNotValidException} — {@code @Valid} failures</li>
+ *   <li>Generic {@link Exception} fallback — HTTP 500</li>
+ * </ol>
+ */
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    // -------------------------------------------------------------------------
+    // 404 Not Found
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException ex, HttpServletRequest request) {
+
+        log.warn("Resource not found: {} id={}", ex.getResourceName(), ex.getResourceId());
+        ErrorResponse body = ExceptionMapper.from(ex, HttpStatus.NOT_FOUND, request);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    // -------------------------------------------------------------------------
+    // 409 Conflict
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(
+            ConflictException ex, HttpServletRequest request) {
+
+        log.warn("Conflict: {} id={}", ex.getResourceName(), ex.getResourceId());
+        ErrorResponse body = ExceptionMapper.from(ex, HttpStatus.CONFLICT, request);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    // -------------------------------------------------------------------------
+    // 400 Bad Request — business rule violation
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusiness(
+            BusinessException ex, HttpServletRequest request) {
+
+        log.warn("Business rule violated: {}", ex.getMessage());
+        ErrorResponse body = ExceptionMapper.from(ex, HttpStatus.BAD_REQUEST, request);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    // -------------------------------------------------------------------------
+    // 422 Unprocessable Entity — programmatic field validation
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(
+            ValidationException ex, HttpServletRequest request) {
+
+        log.warn("Validation failed on field '{}': {}", ex.getField(), ex.getMessage());
+        ErrorResponse body = ExceptionMapper.from(ex, HttpStatus.UNPROCESSABLE_ENTITY, request);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+    }
+
+    /**
+     * Handles {@code @Valid} / {@code @Validated} annotation-driven validation failures.
+     * Collects all field errors from the {@link BindingResult} into a single response.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
+
+        log.warn("Bean validation failed: {} field error(s)", ex.getBindingResult().getFieldErrorCount());
+        ErrorResponse body = ExceptionMapper.fromFieldErrors(ex.getBindingResult().getFieldErrors(), request);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+    }
+
+    // -------------------------------------------------------------------------
+    // 401 Unauthorized
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(
+            UnauthorizedException ex, HttpServletRequest request) {
+
+        log.warn("Unauthorized access attempt: {}", ex.getMessage());
+        ErrorResponse body = ExceptionMapper.from(ex, HttpStatus.UNAUTHORIZED, request);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    // -------------------------------------------------------------------------
+    // 403 Forbidden
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(
+            ForbiddenException ex, HttpServletRequest request) {
+
+        log.warn("Forbidden access: {}", ex.getMessage());
+        ErrorResponse body = ExceptionMapper.from(ex, HttpStatus.FORBIDDEN, request);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
+    // -------------------------------------------------------------------------
+    // 500 Internal Server Error — catch-all fallback
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneric(
+            Exception ex, HttpServletRequest request) {
+
+        log.error("Unexpected error at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        ErrorResponse body = ExceptionMapper.fromGeneric(ex, request);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
+}
+
