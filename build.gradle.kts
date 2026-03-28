@@ -23,6 +23,7 @@ val githubToken: String = (findProperty("gpr.key") as String?) ?: System.getenv(
 repositories {
     mavenLocal()
     mavenCentral()
+    /*
     maven {
         name = "GitHubPackages-Common"
         url = uri("https://maven.pkg.github.com/Nadee95/nadeex-spring-common")
@@ -31,6 +32,8 @@ repositories {
             password = githubToken
         }
     }
+     */
+
 }
 
 dependencyManagement {
@@ -40,11 +43,16 @@ dependencyManagement {
 }
 
 dependencies {
+    // Pulls in ApiResponse, ErrorResponse, ErrorCode, BaseException from common
     api("com.nadeex.spring:common:0.1.2")
+
     compileOnly("org.springframework.boot:spring-boot-starter-web")
+    compileOnly("org.springframework.boot:spring-boot-starter-validation")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
 
+    testImplementation("org.springframework.boot:spring-boot-starter-web")
+    testImplementation("org.springframework.boot:spring-boot-starter-validation")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.junit.jupiter:junit-jupiter")
     testCompileOnly("org.projectlombok:lombok")
@@ -72,7 +80,18 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = "com.nadeex.spring"
             artifactId = "exception"
+            version = "0.1.3"
             from(components["java"])
+
+            // Resolves BOM-managed versions into published POM — fixes "dependencies without versions" error
+            versionMapping {
+                usage("java-api") {
+                    fromResolutionOf("runtimeClasspath")
+                }
+                usage("java-runtime") {
+                    fromResolutionResult()
+                }
+            }
 
             pom {
                 name.set("Nadeex Spring Exception")
@@ -99,6 +118,8 @@ publishing {
         }
     }
     repositories {
+        mavenLocal()
+        /*
         maven {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/Nadee95/nadeex-spring-exception")
@@ -107,5 +128,6 @@ publishing {
                 password = githubToken
             }
         }
+         */
     }
 }
