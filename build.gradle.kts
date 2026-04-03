@@ -7,7 +7,6 @@ plugins {
 }
 
 group = "com.nadeex.spring"
-version = "0.1.3"
 
 java {
     toolchain {
@@ -44,7 +43,7 @@ dependencyManagement {
 
 dependencies {
     // Pulls in ApiResponse, ErrorResponse, ErrorCode, BaseException from common
-    api("com.nadeex.spring:common:0.1.2")
+    api("com.nadeex.spring:common:0.1.0")
 
     compileOnly("org.springframework.boot:spring-boot-starter-web")
     compileOnly("org.springframework.boot:spring-boot-starter-validation")
@@ -80,7 +79,6 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = "com.nadeex.spring"
             artifactId = "exception"
-            version = "0.1.3"
             from(components["java"])
 
             // Resolves BOM-managed versions into published POM — fixes "dependencies without versions" error
@@ -128,6 +126,6 @@ publishing {
                 password = githubToken
             }
         }
-         */
+        */
     }
 }
