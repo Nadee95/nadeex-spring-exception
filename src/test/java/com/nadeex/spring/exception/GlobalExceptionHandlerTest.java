@@ -3,6 +3,7 @@ package com.nadeex.spring.exception;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nadeex.spring.exception.config.ExceptionAutoConfiguration;
 import com.nadeex.spring.exception.handler.GlobalExceptionHandler;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -83,6 +86,12 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/server-error")
         public void serverError() {
             throw new RuntimeException("Unexpected infrastructure failure");
+        }
+
+        @GetMapping("/constraint-violation")
+        public void constraintViolation() {
+            // Simulates what @Validated on controller params or service layer would throw
+            throw new ConstraintViolationException("findById.id: must not be null", Set.of());
         }
 
         @PostMapping("/bean-validation")
@@ -232,6 +241,26 @@ class GlobalExceptionHandlerTest {
                     .andExpect(jsonPath("$.message").value("Only lawyers can be assigned to cases"))
                     .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"))
                     .andExpect(jsonPath("$.path").value("/test/forbidden"));
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 422 Unprocessable Entity — ConstraintViolationException (@Validated)
+    // -------------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("ConstraintViolationException → 422")
+    class ConstraintViolationTests {
+
+        @Test
+        void shouldReturn422WithCorrectBody() throws Exception {
+            mockMvc.perform(get("/test/constraint-violation"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.status").value(422))
+                    .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
+                    .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.message").value("Validation failed for one or more constraints"))
+                    .andExpect(jsonPath("$.path").value("/test/constraint-violation"));
         }
     }
 

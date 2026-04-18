@@ -1,9 +1,10 @@
 package com.nadeex.spring.exception.mapper;
 
 import com.nadeex.spring.common.exception.BaseException;
+import com.nadeex.spring.common.exception.ErrorCode;
 import com.nadeex.spring.common.response.ErrorResponse;
-import com.nadeex.spring.exception.ValidationException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 
@@ -45,6 +46,7 @@ public final class ExceptionMapper {
 
     /**
      * Maps a generic (unexpected) {@link Exception} to an {@link ErrorResponse}.
+     * Sets {@code errorCode} to {@code INTERNAL_SERVER_ERROR} for a consistent response contract.
      *
      * @param ex      the exception to map
      * @param request the current HTTP request (for the path field)
@@ -57,6 +59,40 @@ public final class ExceptionMapper {
         response.setMessage("An unexpected error occurred. Please try again later.");
         response.setPath(request.getRequestURI());
         response.setTimestamp(Instant.now());
+        response.setErrorCode(ErrorCode.INTERNAL_SERVER_ERROR.getCode());
+        return response;
+    }
+
+    /**
+     * Maps Jakarta {@link ConstraintViolationException} (from {@code @Validated} on controller
+     * class or service layer) into a 422 {@link ErrorResponse} with per-constraint details.
+     *
+     * <p>This is distinct from {@link #fromFieldErrors} which handles {@code @Valid} on
+     * {@code @RequestBody}. Use this for {@code @RequestParam}, {@code @PathVariable}, and
+     * service-layer validations.</p>
+     *
+     * @param ex      the constraint violation exception
+     * @param request the current HTTP request
+     * @return a 422 {@link ErrorResponse} containing all constraint violation details
+     */
+    public static ErrorResponse fromConstraintViolations(
+            ConstraintViolationException ex, HttpServletRequest request) {
+
+        List<ErrorResponse.ValidationError> validationErrors = ex.getConstraintViolations().stream()
+                .map(cv -> new ErrorResponse.ValidationError(
+                        cv.getPropertyPath().toString(),
+                        cv.getMessage(),
+                        cv.getInvalidValue()))
+                .toList();
+
+        ErrorResponse response = new ErrorResponse();
+        response.setStatus(HttpStatus.UNPROCESSABLE_ENTITY.value());
+        response.setError(HttpStatus.UNPROCESSABLE_ENTITY.getReasonPhrase());
+        response.setMessage("Validation failed for one or more constraints");
+        response.setPath(request.getRequestURI());
+        response.setTimestamp(Instant.now());
+        response.setErrorCode(ErrorCode.VALIDATION_ERROR.getCode());
+        response.setValidationErrors(validationErrors);
         return response;
     }
 
