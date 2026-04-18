@@ -9,6 +9,7 @@ import com.nadeex.spring.exception.UnauthorizedException;
 import com.nadeex.spring.exception.ValidationException;
 import com.nadeex.spring.exception.mapper.ExceptionMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * <p>Handler priority (most-specific wins, consistent with Spring MVC):</p>
  * <ol>
  *   <li>Per-exception handlers (404, 409, 400, 422, 401, 403)</li>
- *   <li>{@link MethodArgumentNotValidException} — {@code @Valid} failures</li>
+ *   <li>{@link MethodArgumentNotValidException} — {@code @Valid} on {@code @RequestBody}</li>
+ *   <li>{@link ConstraintViolationException} — {@code @Validated} on params or service layer</li>
  *   <li>Generic {@link Exception} fallback — HTTP 500</li>
  * </ol>
  */
@@ -128,6 +130,20 @@ public class GlobalExceptionHandler {
         log.warn("Forbidden access: {}", ex.getMessage());
         ErrorResponse body = ExceptionMapper.from(ex, HttpStatus.FORBIDDEN, request);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
+    // -------------------------------------------------------------------------
+    // 422 Unprocessable Entity — @Validated constraint violations
+    // (covers @RequestParam, @PathVariable, and service-layer @Validated)
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex, HttpServletRequest request) {
+
+        log.warn("Constraint violation: {} violation(s)", ex.getConstraintViolations().size());
+        ErrorResponse body = ExceptionMapper.fromConstraintViolations(ex, request);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
     }
 
     // -------------------------------------------------------------------------
