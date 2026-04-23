@@ -18,6 +18,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Global exception handler for all REST controllers.
@@ -144,6 +145,26 @@ public class GlobalExceptionHandler {
         log.warn("Constraint violation: {} violation(s)", ex.getConstraintViolations().size());
         ErrorResponse body = ExceptionMapper.fromConstraintViolations(ex, request);
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+    }
+
+    // -------------------------------------------------------------------------
+    // 400 Bad Request — path/query variable type mismatch (e.g. invalid UUID)
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+
+        String msg = String.format("Invalid value '%s' for parameter '%s'", ex.getValue(), ex.getName());
+        log.warn("Type mismatch: {}", msg);
+        ErrorResponse body = new ErrorResponse();
+        body.setStatus(HttpStatus.BAD_REQUEST.value());
+        body.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
+        body.setMessage(msg);
+        body.setPath(request.getRequestURI());
+        body.setTimestamp(java.time.Instant.now());
+        body.setErrorCode("BAD_REQUEST");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     // -------------------------------------------------------------------------
