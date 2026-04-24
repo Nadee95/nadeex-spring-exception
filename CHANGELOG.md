@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-24
+
+### Added
+- `EventSerializationException` — thrown when a domain event cannot be serialized to JSON for
+  outbox storage; wraps `JsonProcessingException` and maps to `ErrorCode.INTERNAL_SERVER_ERROR` (HTTP 500)
+- `GlobalExceptionHandler` — two new `@ExceptionHandler` methods:
+  - `ConstraintViolationException` (Jakarta Validation) → HTTP 422 Unprocessable Entity;
+    covers `@RequestParam`, `@PathVariable`, and service-layer `@Validated` violations;
+    collects all constraint messages via `ExceptionMapper.fromConstraintViolations()`
+  - `MethodArgumentTypeMismatchException` (Spring MVC) → HTTP 400 Bad Request;
+    covers invalid path/query variable types (e.g. non-UUID string passed to a `UUID` parameter)
+- `ExceptionMapper` — `fromConstraintViolations()` helper that converts `ConstraintViolation`
+  set into a flat list of `ErrorResponse.ValidationError` entries
+
 ## [0.1.0] - 2026-04-03
 
 ### Added

@@ -22,7 +22,6 @@ val githubToken: String = (findProperty("gpr.key") as String?) ?: System.getenv(
 repositories {
     mavenLocal()
     mavenCentral()
-    /*
     maven {
         name = "GitHubPackages-Common"
         url = uri("https://maven.pkg.github.com/Nadee95/nadeex-spring-common")
@@ -31,7 +30,6 @@ repositories {
             password = githubToken
         }
     }
-     */
 
 }
 
@@ -117,7 +115,6 @@ publishing {
     }
     repositories {
         mavenLocal()
-        /*
         maven {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/Nadee95/nadeex-spring-exception")
@@ -126,6 +123,5 @@ publishing {
                 password = githubToken
             }
         }
-        */
     }
 }
