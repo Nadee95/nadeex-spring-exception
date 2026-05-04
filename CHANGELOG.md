@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-04
+
+### Added
+- `GlobalExceptionHandler` — added `AccessDeniedException` handler; catches Spring Security
+  method-security denials (`@PreAuthorize` / `@Secured`); since `AuthorizationDeniedException`
+  (Spring Security 6) extends `AccessDeniedException` a single handler covers both; returns
+  HTTP 403 with `errorCode: "FORBIDDEN"`
+
+---
+
 ## [0.2.0] - 2026-04-24
 
 ### Added
