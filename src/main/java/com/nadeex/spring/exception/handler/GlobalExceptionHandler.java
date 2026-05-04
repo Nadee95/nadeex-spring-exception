@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -130,6 +131,26 @@ public class GlobalExceptionHandler {
 
         log.warn("Forbidden access: {}", ex.getMessage());
         ErrorResponse body = ExceptionMapper.from(ex, HttpStatus.FORBIDDEN, request);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
+    /**
+     * Handles Spring Security method-security denials ({@code @PreAuthorize} / {@code @Secured}).
+     * {@code AuthorizationDeniedException} (Spring Security 6) extends {@link AccessDeniedException},
+     * so this single handler covers both.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+
+        log.warn("Access denied at {}: {}", request.getRequestURI(), ex.getMessage());
+        ErrorResponse body = new ErrorResponse();
+        body.setStatus(HttpStatus.FORBIDDEN.value());
+        body.setError(HttpStatus.FORBIDDEN.getReasonPhrase());
+        body.setMessage("Access Denied");
+        body.setPath(request.getRequestURI());
+        body.setTimestamp(java.time.Instant.now());
+        body.setErrorCode("FORBIDDEN");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
